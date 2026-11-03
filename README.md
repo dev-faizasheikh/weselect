@@ -21,7 +21,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </React.StrictMode>
 );
 
-src/api.js
+**src/api.js**
 const BASE = '/api/v1';
 
 export class ApiError extends Error {
@@ -173,7 +173,7 @@ export async function downloadExport(id, format) {
   URL.revokeObjectURL(url);
 }
 
-src/utils.js
+**src/utils.js**
 export function formatDate(iso) {
   if (!iso) return '-';
   const d = new Date(iso);
@@ -201,7 +201,7 @@ export function fmtNum(n, digits = 1) {
 export const TYPE_LABEL = { mcq: 'MCQ', descriptive: 'Descriptive', cognitive: 'Cognitive' };
 
 
-src/context/AuthContext.jsx
+**src/context/AuthContext.jsx**
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { api } from '../api.js';
 
@@ -249,7 +249,7 @@ export function AuthProvider({ children }) {
 
 export const useAuth = () => useContext(AuthCtx);
 
-src/context/UiContext.jsx
+**src/context/UiContext.jsx**
 import { createContext, useCallback, useContext, useRef, useState } from 'react';
 import Modal from '../components/Modal.jsx';
 
@@ -311,7 +311,7 @@ export function UiProvider({ children }) {
 
 export const useUi = () => useContext(UiCtx);
 
-src/components/Modal.jsx
+**src/components/Modal.jsx**
 import { useEffect } from 'react';
 
 export default function Modal({ title, children, footer, onClose, size = 'md' }) {
@@ -335,13 +335,13 @@ export default function Modal({ title, children, footer, onClose, size = 'md' })
   );
 }
 
-src/components/Badge.jsx
+**src/components/Badge.jsx**
 export default function Badge({ value }) {
   const v = value || 'none';
   return <span className={`badge b-${v}`}>{String(v).replace(/_/g, ' ')}</span>;
 }
 
-src/components/PageState.jsx
+**src/components/PageState.jsx**
 export function Loading({ full = false, text = 'Loading...' }) {
   return (
     <div className={full ? 'state state-full' : 'state'}>
@@ -372,7 +372,7 @@ export function Empty({ title, text, action }) {
   );
 }
 
-src/components/Layout.jsx
+**src/components/Layout.jsx**
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 
@@ -427,7 +427,7 @@ export default function Layout() {
   );
 }
 
-src/components/AssessmentForm.jsx
+**src/components/AssessmentForm.jsx**
 import { useState } from 'react';
 import { wordCount } from '../utils.js';
 
@@ -593,7 +593,7 @@ export default function AssessmentForm({ initial, onSubmit, submitLabel, saving 
   );
 }
 
-src/components/QuestionEditor.jsx: used to edit and to add custom questions:
+**src/components/QuestionEditor.jsx: used to edit and to add custom questions:**
 import { useState } from 'react';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
@@ -689,7 +689,7 @@ export default function QuestionEditor({ initial, onSave, onCancel, saving }) {
   );
 }
 
-src/pages/LoginPage.jsx
+**src/pages/LoginPage.jsx**
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -747,7 +747,7 @@ export default function LoginPage() {
   );
 }
 
-src/pages/AssessmentsPage.jsx: the dashboard:
+**src/pages/AssessmentsPage.jsx: the dashboard:**
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
@@ -853,7 +853,7 @@ export default function AssessmentsPage() {
   );
 }
 
-src/pages/NewAssessmentPage.jsx
+**src/pages/NewAssessmentPage.jsx**
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
@@ -899,7 +899,7 @@ export default function NewAssessmentPage() {
   );
 }
 
-src/pages/AssessmentLayout.jsx
+**src/pages/AssessmentLayout.jsx**
 import { useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
@@ -968,7 +968,7 @@ export default function AssessmentLayout() {
   );
 }
 
-src/pages/OverviewTab.jsx
+**src/pages/OverviewTab.jsx**
 import { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { api } from '../api.js';
@@ -1195,7 +1195,7 @@ export default function QuestionsTab() {
 }
 
 
-src/pages/ParticipantsTab.jsx
+**src/pages/ParticipantsTab.jsx**
 import { useCallback, useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { api } from '../api.js';
@@ -1372,7 +1372,7 @@ export default function ParticipantsTab() {
 
 
 
-src/pages/ResultsTab.jsx
+**src/pages/ResultsTab.jsx**
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { api, downloadExport } from '../api.js';
@@ -1459,7 +1459,7 @@ export default function ResultsTab() {
 
 
 
-src/pages/AttemptPage.jsx
+**src/pages/AttemptPage.jsx**
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
@@ -1587,7 +1587,7 @@ export default function AttemptPage() {
 
 
 
-src/pages/UsersPage.jsx
+**src/pages/UsersPage.jsx**
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api.js';
 import Badge from '../components/Badge.jsx';
