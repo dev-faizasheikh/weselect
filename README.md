@@ -1904,3 +1904,8 @@ textarea.input { resize: vertical; }
   .topbar { padding: 10px 16px; }
   .details { grid-template-columns: 1fr; }
 }
+
+
+
+   import { mockApi, mockDownload } from './mockApi.js';
+   const MOCK = import.meta.env.VITE_MOCK === 'true';
