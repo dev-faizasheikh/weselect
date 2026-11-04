@@ -1906,6 +1906,160 @@ textarea.input { resize: vertical; }
 }
 
 
+// DEV ONLY: fake backend so every page can be checked without the real API.
+const delay = (ms = 300) => new Promise((r) => setTimeout(r, ms));
+const clone = (x) => JSON.parse(JSON.stringify(x));
+const fail = (status, code, message) => Object.assign(new Error(message), { status, code });
+let seq = 100;
+const uid = () => `id-${++seq}`;
+const now = () => new Date().toISOString();
 
-   import { mockApi, mockDownload } from './mockApi.js';
-   const MOCK = import.meta.env.VITE_MOCK === 'true';
+const JD = Array(20).fill('We are hiring a backend engineer who builds reliable APIs and works with databases.').join(' ');
+
+const me = { id: 'u1', name: 'Demo Admin', email: 'admin@demo.com', role: 'admin', status: 'active' };
+const tenant = { id: 't1', name: 'Demo Company' };
+
+const db = {
+  users: [
+    me,
+    { id: 'u2', name: 'Riya Recruiter', email: 'riya@demo.com', role: 'recruiter', status: 'active' },
+  ],
+  assessments: [
+    { id: 'a1', title: 'Backend Engineer Screening', status: 'draft', durationMinutes: 60, passingScore: 60,
+      jobDescription: JD, jdFileName: null, createdAt: now(),
+      sections: [{ type: 'mcq', domain: 'Node.js', difficulty: 'medium', count: 2 }, { type: 'descriptive', domain: 'System design', difficulty: 'hard', count: 1 }] },
+    { id: 'a2', title: 'Data Analyst Test', status: 'open', durationMinutes: 45, passingScore: 50,
+      jobDescription: JD, jdFileName: 'jd.pdf', createdAt: now(),
+      sections: [{ type: 'mcq', domain: 'SQL', difficulty: 'easy', count: 2 }, { type: 'descriptive', domain: 'Analytics', difficulty: 'medium', count: 1 }] },
+  ],
+  questions: {
+    a1: [],
+    a2: [
+      { id: 'q1', type: 'mcq', body: 'Which SQL clause filters grouped rows?', options: ['WHERE', 'HAVING', 'ORDER BY', 'LIMIT'], correct: 'B', maxScore: 1, source: 'ai', position: 1 },
+      { id: 'q2', type: 'mcq', body: 'Which join returns only matching rows?', options: ['LEFT', 'RIGHT', 'INNER', 'FULL'], correct: 'C', maxScore: 1, source: 'custom', position: 2 },
+      { id: 'q3', type: 'descriptive', body: 'Explain how you would detect outliers in a dataset.', rubric: '4 marks method, 3 marks tools, 3 marks example', maxScore: 10, source: 'ai', position: 3 },
+    ],
+  },
+  participants: {
+    a1: [],
+    a2: [
+      { id: 'p1', name: 'Asha Rao', email: 'asha@example.com', inviteStatus: 'sent', attemptStatus: 'scored', percent: 85 },
+      { id: 'p2', name: 'Vikram Shah', email: 'vikram@example.com', inviteStatus: 'sent', attemptStatus: 'in_progress', percent: null },
+      { id: 'p3', name: 'Neha Iyer', email: 'neha@example.com', inviteStatus: 'failed', attemptStatus: 'none', percent: null },
+    ],
+  },
+  answers: [
+    { questionId: 'q1', type: 'mcq', body: 'Which SQL clause filters grouped rows?', answer: 'B', correct: 'B', score: 1, maxScore: 1, source: 'auto', justification: null },
+    { questionId: 'q2', type: 'mcq', body: 'Which join returns only matching rows?', answer: 'A', correct: 'C', score: 0, maxScore: 1, source: 'auto', justification: null },
+    { questionId: 'q3', type: 'descriptive', body: 'Explain how you would detect outliers in a dataset.', answer: 'I would use box plots and the IQR rule, then verify with domain knowledge.', score: 7, maxScore: 10, source: 'ai', justification: 'Good method and tools, but no concrete example was given.' },
+  ],
+};
+
+const find = (id) => {
+  const a = db.assessments.find((x) => x.id === id);
+  if (!a) throw fail(404, 'NOT_FOUND', 'Assessment not found.');
+  return a;
+};
+
+export const mockApi = {
+  login: async (email, password) => {
+    await delay();
+    if (!email || !password) throw fail(401, 'INVALID_CREDENTIALS', 'Invalid email or password.');
+    return { user: me, tenant };
+  },
+  logout: async () => null,
+  me: async () => ({ user: me, tenant }),
+
+  listUsers: async () => { await delay(); return clone(db.users); },
+  createUser: async (b) => { await delay(); const u = { id: uid(), status: 'active', ...b }; delete u.password; db.users.push(u); return { id: u.id }; },
+  updateUser: async (id, b) => { await delay(); Object.assign(db.users.find((u) => u.id === id), b); return null; },
+
+  listAssessments: async (status) => {
+    await delay();
+    return clone(db.assessments.filter((a) => !status || a.status === status).map((a) => ({
+      id: a.id, title: a.title, status: a.status, createdAt: a.createdAt,
+      participantCount: (db.participants[a.id] || []).length,
+      submittedCount: (db.participants[a.id] || []).filter((p) => p.attemptStatus === 'scored').length,
+    })));
+  },
+  createAssessment: async (b) => {
+    await delay();
+    const a = { id: uid(), status: 'draft', jdFileName: null, createdAt: now(), ...b };
+    db.assessments.unshift(a); db.questions[a.id] = []; db.participants[a.id] = [];
+    return { id: a.id, status: 'draft' };
+  },
+  getAssessment: async (id) => { await delay(); return clone(find(id)); },
+  updateAssessment: async (id, b) => { await delay(); Object.assign(find(id), b); return null; },
+  deleteAssessment: async (id) => { await delay(); db.assessments = db.assessments.filter((a) => a.id !== id); return null; },
+  closeAssessment: async (id) => { await delay(); find(id).status = 'closed'; return null; },
+  uploadJd: async (id, file) => { await delay(); find(id).jdFileName = file.name; return { fileName: file.name, wordCount: 280, jobDescription: JD }; },
+
+  generate: async (id) => {
+    await delay();
+    const list = db.questions[id] || (db.questions[id] = []);
+    const start = list.length;
+    list.push(
+      { id: uid(), type: 'mcq', body: 'Which HTTP status means "Created"?', options: ['200', '201', '204', '409'], correct: 'B', maxScore: 1, source: 'ai', position: start + 1 },
+      { id: uid(), type: 'mcq', body: 'What does REST stand for?', options: ['Remote State', 'Representational State Transfer', 'Reliable Service', 'Rapid Execution'], correct: 'B', maxScore: 1, source: 'ai', position: start + 2 },
+      { id: uid(), type: 'descriptive', body: 'Design a rate limiter for a public API.', rubric: '4 marks algorithm, 3 marks storage, 3 marks edge cases', maxScore: 10, source: 'ai', position: start + 3 },
+    );
+    return { jobId: 'job-1' };
+  },
+  getJob: async () => { await delay(1200); return { status: 'done', questionCount: 3 }; },
+  listQuestions: async (id) => { await delay(); return clone(db.questions[id] || []); },
+  addQuestion: async (id, b) => { await delay(); const l = db.questions[id] || (db.questions[id] = []); l.push({ id: uid(), source: 'custom', position: l.length + 1, ...b }); return null; },
+  updateQuestion: async (qid, b) => { await delay(); Object.values(db.questions).flat().forEach((q) => { if (q.id === qid) Object.assign(q, b); }); return null; },
+  deleteQuestion: async (qid) => { await delay(); Object.keys(db.questions).forEach((k) => { db.questions[k] = db.questions[k].filter((q) => q.id !== qid); }); return null; },
+  regenerateQuestion: async () => ({ jobId: 'job-2' }),
+  approve: async (id) => {
+    await delay();
+    if (!(db.questions[id] || []).length) throw fail(409, 'NO_QUESTIONS', 'Add at least one question.');
+    find(id).status = 'approved';
+    return { status: 'approved' };
+  },
+
+  listParticipants: async (id) => { await delay(); return clone(db.participants[id] || []); },
+  addParticipants: async (id, b) => {
+    await delay();
+    const list = db.participants[id] || (db.participants[id] = []);
+    let rows = b.participants || (b.csv || '').split('\n').slice(1).map((l) => { const [name, email] = l.split(','); return { name: (name || '').trim(), email: (email || '').trim() }; });
+    let added = 0, duplicates = 0; const invalid = [];
+    rows.forEach((r) => {
+      if (!r.email || !r.email.includes('@')) return invalid.push(r.email || '(empty)');
+      if (list.some((p) => p.email === r.email)) return duplicates++;
+      list.push({ id: uid(), name: r.name, email: r.email, inviteStatus: 'none', attemptStatus: 'none', percent: null });
+      added++;
+    });
+    return { added, duplicates, invalid };
+  },
+  deleteParticipant: async (pid) => { await delay(); Object.keys(db.participants).forEach((k) => { db.participants[k] = db.participants[k].filter((p) => p.id !== pid); }); return null; },
+  sendInvitations: async (id) => {
+    await delay();
+    let n = 0;
+    (db.participants[id] || []).forEach((p) => { if (p.inviteStatus === 'none') { p.inviteStatus = 'sent'; n++; } });
+    return { queued: n };
+  },
+  resend: async (pid) => { await delay(); Object.values(db.participants).flat().forEach((p) => { if (p.id === pid) p.inviteStatus = 'sent'; }); return null; },
+
+  results: async (id, sort = 'score') => {
+    await delay();
+    const rows = [
+      { attemptId: 'att1', name: 'Asha Rao', email: 'asha@example.com', score: 8.5, maxScore: 10, percent: 85, passed: true, timeTakenSec: 1860, status: 'scored' },
+      { attemptId: 'att2', name: 'Vikram Shah', email: 'vikram@example.com', score: 4, maxScore: 10, percent: 40, passed: false, timeTakenSec: 2400, status: 'needs_review' },
+      { attemptId: 'att3', name: 'Neha Iyer', email: 'neha@example.com', score: 6, maxScore: 10, percent: 60, passed: true, timeTakenSec: 1500, status: 'scored' },
+    ];
+    rows.sort((a, b) => (sort === 'name' ? a.name.localeCompare(b.name) : b.percent - a.percent));
+    return { summary: { count: 3, avg: 61.7, passRate: 0.67 }, rows };
+  },
+  getAttempt: async () => { await delay(); return { participant: { name: 'Asha Rao', email: 'asha@example.com' }, answers: clone(db.answers) }; },
+  override: async (attemptId, qid, b) => { await delay(); const a = db.answers.find((x) => x.questionId === qid); a.score = b.score; a.source = 'manual'; a.justification = b.comment; return { newTotal: 0 }; },
+};
+
+export function mockDownload(id, format) {
+  const text = 'name,email,score\nAsha Rao,asha@example.com,85\n';
+  const blob = new Blob([text], { type: format === 'pdf' ? 'application/pdf' : 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `mock-results.${format}`;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
